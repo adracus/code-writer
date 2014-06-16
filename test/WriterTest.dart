@@ -6,7 +6,7 @@ main() {
     print(new ShortNamedFunc("datfunc", returnType: "String",
         parameters: [new Parameter("foo")])..e = new Expression.raw("\"wat\""));
     var lib = new LibraryFile("mylib.dart", "mylib");
-    lib.addImport(new Import("dart", "mypack.dart"));
+    lib.addImport(new Import("io"));
     var myClass = new CodeClass("test");
     lib.addContent(myClass);
     print(lib);
