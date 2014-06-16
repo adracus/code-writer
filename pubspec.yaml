@@ -1,6 +1,7 @@
-name: CodeWriter
+name: codewriter
 version: 0.0.1
 author: Axel Christ<adracus@gmail.com>
 description: A pub package
-dependencies:
-  unittest: any
+homepage: https://github.com/Adracus/CodeWriter
+devDependencies:
+  unittest: '>=0.11.0+2 <0.12.0'
