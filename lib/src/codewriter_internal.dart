@@ -7,5 +7,7 @@ part 'code_file.dart';
 part 'expression.dart';
 
 abstract class Textable {
+  bool outCommented = false;
   String get text;
+  String get code => outCommented? "/*" + text + "*/" : text;
 }
