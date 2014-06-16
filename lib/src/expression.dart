@@ -4,21 +4,21 @@ class Parameter {
   final String type;
   final String name;
   Parameter(this.name, {this.type: ""});
-  toString() => "$type $name".trim();
+  String get text => "$type $name".trim();
+  toString() => text;
 }
 
 class Expression {
   final String str;
   Expression() : str = "";
   Expression.raw(this.str);
-  toString() => str;
+  String get text => str;
 }
 
 abstract class RawFunc extends Expression {
   final List<Parameter> parameters;
   RawFunc(this.parameters);
   String get proto => "(${parameters.join(", ")})";
-  toString() => "RawFunc $proto";
 }
 
 abstract class RegularFunction {
@@ -40,12 +40,12 @@ abstract class RawAnonFunc extends RawFunc {
 
 class AnonFunc extends RawAnonFunc with RegularFunction {
   AnonFunc({List<Parameter> parameters: const[]}): super(parameters);
-  toString() => super.proto + " => " + body;
+  String get text => super.proto + " => " + body;
 }
 
 class ShortAnonFunc extends RawAnonFunc with ShorthandFunction {
   ShortAnonFunc({List<Parameter> parameters: const[]}): super(parameters);
-  toString() => super.proto + " => " + expressionString;
+  String get text => super.proto + " => " + expressionString;
 }
 
 abstract class RawNamedFunc extends RawFunc {
@@ -59,13 +59,13 @@ abstract class RawNamedFunc extends RawFunc {
 class NamedFunc extends RawNamedFunc with RegularFunction {
   NamedFunc(String name, {String returnType: "", List<Parameter> parameters: const[]})
       : super(name, returnType, parameters);
-  toString() => super.proto + body;
+  String get text => super.proto + body;
 }
 
 class ShortNamedFunc extends RawNamedFunc with ShorthandFunction {
   ShortNamedFunc(String name, {String returnType: "", List<Parameter> parameters: const[]})
       : super(name, returnType, parameters);
-  toString() => super.proto + " => " + expressionString;
+  String get text => super.proto + " => " + expressionString;
 }
 
 class CodeClass extends Expression{
@@ -74,5 +74,5 @@ class CodeClass extends Expression{
   CodeClass(this.name);
   addMember(Expression member) => members.add(member);
   String get memberString => members.map((member) => "  " + member.toString()).join("\n");
-  toString() => "class $name {\n$memberString\n}";
+  String get text => "class $name {\n$memberString\n}";
 }
