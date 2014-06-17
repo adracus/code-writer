@@ -20,6 +20,8 @@ main() {
   });
   
   test("File generation", () {
+    var rImp = new Import.raw("rawImport.dart");
+    expect(rImp.code, equals("import 'rawImport.dart';"));
     var lib = new LibraryFile("mylib.dart", "mylib");
     lib.addImport(new Import("io"));
     var myClass = new CodeClass("test");

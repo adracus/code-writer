@@ -5,8 +5,13 @@ class Import extends Object with Textable{
   final String name;
   final List<String> show;
   final String as;
-  Import(this.name, {this.namespace: "dart", this.show, this.as});
+  final bool _raw;
+  
+  Import(this.name, {this.namespace: "dart", this.show, this.as}): _raw = false;
+  Import.raw(this.name) : _raw = true, namespace = "", as = null, show = null;
+  
   String get text {
+    if(_raw) return "import '$name';";
     var result = "import \"$namespace:$name\"";
     if(as != null) result += " as $as";
     if(show != null) result += " show ${show.join(", ")}";
