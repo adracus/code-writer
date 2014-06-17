@@ -95,7 +95,7 @@ class AnonFunc extends RawAnonFunc with RegularFunction {
       List<OptionalPosParameter> optionalPosParams: const[]})
         : super(parameters, optionalNamedParameters,
                 optionalPosParams);
-  String get text => super.parameterString + " =>\n    " + body;
+  String get text => super.parameterString + " {\n" + body + "}\n";
 }
 
 class ShortAnonFunc extends RawAnonFunc with ShorthandFunction {
@@ -137,7 +137,7 @@ class ShortNamedFunc extends RawNamedFunc with ShorthandFunction {
                 : super(name, returnType, parameters,
                         optionalNamedParameters,
                         optionalPosParameters);
-  String get text => super.functionHead + " => " + expressionString;
+  String get text => super.functionHead + " =>\n    " + expressionString;
 }
 
 class CodeClass extends Expression{
