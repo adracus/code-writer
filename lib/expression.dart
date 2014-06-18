@@ -1,10 +1,10 @@
-part of codewriter_internal;
+part of codewriter;
 
 class Parameter extends Object with Textable{
   final String type;
   final String name;
   Parameter(this.name, {this.type: ""});
-  String get text => "$type $name".trim();
+  List<String> get lines => ["$type $name".trim()];
 }
 
 abstract class OptionalParameter extends Parameter {
@@ -16,22 +16,56 @@ abstract class OptionalParameter extends Parameter {
 class OptionalNamedParameter extends OptionalParameter {
   OptionalNamedParameter(String name, {Object defaultValue, String type})
       : super(name, defaultValue: defaultValue, type: type);
-  String get text =>
-      defaultValue == null? "$name" : "$name: $defaultValue";
+  List<String> get lines =>
+      defaultValue == null? [name] : ["$name: $defaultValue"];
 }
 
 class OptionalPosParameter extends OptionalParameter {
   OptionalPosParameter(String name, {Object defaultValue, String type})
       : super(name, defaultValue: defaultValue, type: type);
-  String get text =>
-      defaultValue == null? "$name" : "$name = $defaultValue";
+  List<String> get lines =>
+      defaultValue == null? [name] : ["$name = $defaultValue"];
 }
 
-class Expression extends Object with Textable {
-  final String str;
-  Expression() : str = "";
-  Expression.raw(this.str);
-  String get text => str;
+abstract class Expression extends Object with Textable {
+}
+
+class FuncCall extends Expression {
+  final String name;
+  final List<Expression> positionalParameters;
+  final Map<String, Expression> optionalParameters;
+  FuncCall(this.name,
+      [this.positionalParameters = const[], this.optionalParameters = const{}]);
+  List<String> get _posParamLines => 
+      Textable.listToLines(positionalParameters, 0);
+  List<String> get _optParamLines {
+    var result = [];
+    optionalParameters.forEach((k, exp) => result.add("$k: ${exp.text}"));
+    return result;
+  }
+  String get _allParamsString =>
+      (_posParamLines..addAll(_optParamLines)).join(", ");
+  List<String> get lines => ["$name($_allParamsString);"];
+}
+
+class UserExpression extends Expression {
+  List<String> _lines;
+  UserExpression(content) {
+    content is List? _lines = content :
+      content is String? _lines = [content] : throw "Illegal argument";
+  }
+  List<String> get lines => _lines;
+}
+
+class Declaration extends Object with Textable {
+  final String type;
+  final String name;
+  final Expression calculation;
+  Declaration(this.name, {this.type: "", this.calculation});
+  String get _proto => "$type $name".trim();
+  String get text => calculation == null ?
+      "$_proto;" : "$_proto = ${calculation.text};";
+  List<String> get lines => [text];
 }
 
 abstract class RawFunc extends Expression {
@@ -58,9 +92,9 @@ abstract class RawFunc extends Expression {
   
   List<String> _aggregateParameters() {
     var result = [];
-    result..add(_optNamedParamsString)
+    result..add(_paramsString)
           ..add(_optPosParamsString)
-          ..add(_paramsString);
+          ..add(_optNamedParamsString);
     result.removeWhere((elem) => elem == null);
     return result;
   }
@@ -71,14 +105,12 @@ abstract class RawFunc extends Expression {
 abstract class RegularFunction {
   List<Expression> _expressions = [];
   void addExpression(Expression e) => _expressions.add(e);
-  String get expressionString =>
-      _expressions.map((e) => e.text + ";").join("\n");
-  String get body => "{\n${expressionString}\n}";
+  List<String> get expressionLines => Textable.listToLines(_expressions, NTAB);
 }
 
 abstract class ShorthandFunction {
-  Expression e;
-  String get expressionString => e.text + ";";
+  Expression expression;
+  List<String> get expressionLines => expression.indentedLines(LTAB);
 }
 
 abstract class RawAnonFunc extends RawFunc {
@@ -95,7 +127,8 @@ class AnonFunc extends RawAnonFunc with RegularFunction {
       List<OptionalPosParameter> optionalPosParams: const[]})
         : super(parameters, optionalNamedParameters,
                 optionalPosParams);
-  String get text => super.parameterString + " {\n" + body + "}\n";
+  List<String> get lines =>
+      ["$parameterString {"]..addAll(expressionLines)..add("}");
 }
 
 class ShortAnonFunc extends RawAnonFunc with ShorthandFunction {
@@ -104,7 +137,8 @@ class ShortAnonFunc extends RawAnonFunc with ShorthandFunction {
         List<OptionalPosParameter> optionalPosParams: const[]})
           : super(parameters, optionalNamedParameters,
                   optionalPosParams);
-  String get text => super.parameterString + " => " + expressionString;
+  List<String> get lines =>
+      ["$parameterString =>"]..addAll(expressionLines);
 }
 
 abstract class RawNamedFunc extends RawFunc {
@@ -126,7 +160,7 @@ class NamedFunc extends RawNamedFunc with RegularFunction {
             List<OptionalPosParameter> optionalPosParameters: const[]})
               : super(name, returnType, parameters, optionalNamedParameters,
                       optionalPosParameters);
-  String get text => super.functionHead + body;
+  List<String> get lines => ["$functionHead {"]..addAll(expressionLines)..add("}");
 }
 
 class ShortNamedFunc extends RawNamedFunc with ShorthandFunction {
@@ -137,7 +171,41 @@ class ShortNamedFunc extends RawNamedFunc with ShorthandFunction {
                 : super(name, returnType, parameters,
                         optionalNamedParameters,
                         optionalPosParameters);
-  String get text => super.functionHead + " =>\n    " + expressionString;
+  List<String> get lines =>
+      ["$functionHead =>"]..addAll(expressionLines);
+}
+
+abstract class Statement extends Expression {
+  final List<Expression> body;
+  Statement(this.body);
+  List<String> get bodyLines => Textable.listToLines(body, NTAB);
+}
+
+abstract class ConditionalStatement extends Statement {
+  final Expression condition;
+  ConditionalStatement(this.condition, List<Expression> body)
+      :super(body);
+}
+
+class IfStatement extends ConditionalStatement {
+  final List<Expression> elseBody;
+  IfStatement(Expression condition, List<Expression> body, {this.elseBody})
+      :super(condition, body);
+  List<String> get _ifPart =>
+      ["if(${condition.text}) {"]..addAll(bodyLines)..add("}");
+  List<String> get _elseBodyLines => Textable.listToLines(elseBody, NTAB);
+  List<String> get lines {
+    if(elseBody == null) return _ifPart;
+    return _ifPart..add("else {")..addAll(_elseBodyLines)..add("}");
+  }
+}
+
+class WhileStatement extends ConditionalStatement {
+  WhileStatement(Expression condition, List<Expression> body)
+      :super(condition, body);
+  List<String> get lines =>
+      ["while(${condition.text}) {"]
+        ..addAll(Textable.listToLines(body, NTAB))..add("}");
 }
 
 class CodeClass extends Expression{
@@ -148,5 +216,6 @@ class CodeClass extends Expression{
   CodeClass(this.name, {this.extendedClass, this.mixins});
   addMember(Expression member) => members.add(member);
   String get memberString => members.map((member) => "  " + member.text).join("\n");
-  String get text => "class $name {\n$memberString\n}";
+  List<String> get lines => ["class $name {"]
+    ..addAll(Textable.listToLines(members, NTAB))..add("}");
 }
