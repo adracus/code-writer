@@ -57,7 +57,7 @@ class UserExpression extends Expression {
   List<String> get lines => _lines;
 }
 
-class Declaration extends Object with Textable {
+class Declaration extends Expression {
   final String type;
   final String name;
   final Expression calculation;
@@ -185,6 +185,18 @@ abstract class ConditionalStatement extends Statement {
   final Expression condition;
   ConditionalStatement(this.condition, List<Expression> body)
       :super(body);
+}
+
+class ForLoop extends ConditionalStatement {
+  final Expression initialization;
+  final Expression afterthought;
+  ForLoop(this.initialization, Expression condition,
+      this.afterthought, List<Expression> body)
+      :super(condition, body);
+  String get _header =>
+      initialization.code + " " + condition.code + "; "+ afterthought.code;
+  List<String> get lines =>
+      ["for($_header) {"]..addAll(bodyLines)..add("}");
 }
 
 class IfStatement extends ConditionalStatement {

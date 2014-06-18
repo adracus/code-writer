@@ -36,8 +36,15 @@ main() {
   test("Test function call generation", () {
     var funcCall = new FuncCall("myFunc",
         [new UserExpression("1 + 1")], {"body": new UserExpression("true")});
-    print(funcCall.code);
     expect(funcCall.code, equals("myFunc(1 + 1, body: true);"));
+  });
+  
+  test("Test for loop generation", () {
+    var forLoop = new ForLoop(
+        new Declaration("i", type: "num", calculation: new UserExpression("0")),
+        new UserExpression("i < '123'.length"),
+        new UserExpression("i++"), []);
+    expect(forLoop.code, equals("for(num i = 0; i < '123'.length; i++) {\n}"));
   });
   
   test("File generation", () {
