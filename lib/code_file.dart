@@ -26,12 +26,12 @@ abstract class CodeFile extends Object with Textable{
   addContent(Expression element) => _content.add(element);
   List<String> get lines =>
       Textable.listToLines(_content, 0);
-  Future writeToFile([String location = ""]) {
+  Future<File> writeToFile([String location = ""]) {
     var f = new File(location + name);
     var sink = f.openWrite();
     String content = this.text;
-    sink.write(this.text);
-    return sink.flush().whenComplete(() => sink.close());
+    sink.write(content);
+    return sink.flush().then((_) => f).whenComplete(() => sink.close());
   }
 }
 
